@@ -69,7 +69,26 @@ function fetch() {
     }
   }
 
-  const diffHtml = (contentUrl, number, name) => {
+  const sendNotification = (roomId, message) => {
+    const requestUrl = `https://api.chatwork.com/v2/rooms/${roomId}/messages`
+
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-ChatWorkToken': 'b040d36f8a6d9b30ee37f61b127d53e0',
+    }
+    const options = {
+      method: 'POST',
+      headers: headers,
+      payload: { body: message },
+    }
+
+    const response = UrlFetchApp.fetch(requestUrl, options)
+
+    Logger.log(response)
+  }
+
+  const diffHtml = (contentUrl, number, name, roomId) => {
     Logger.log(`${number}_${name}の差分チェック開始`)
     let oldHtml = ''
     let oldHtmlId = ''
@@ -103,7 +122,11 @@ function fetch() {
 
         urlToBackupAndPdf(contentUrl, number, name)
 
-        Logger.log(`定期観測の更新＆比較用PDF作成完了。現在の記事URL：${contentUrl}  比較用PDFのURL：${oldPdf.getUrl()}`)
+        Logger.log(
+          `定期観測の更新＆比較用PDF作成完了。現在の記事URL：${contentUrl}  比較用PDFのURL：${oldPdf.getUrl()}`
+        )
+
+        sendNotification(roomId, `${number}_${name}の記事に更新がありました。現在の記事URL：${contentUrl}  比較用PDFのURL：${oldPdf.getUrl()}`)
       } else {
         Logger.log(`記事に更新がありませんでした。`)
       }
@@ -117,11 +140,12 @@ function fetch() {
       const contentUrl = row[5]
       const number = row[0]
       const name = row[3]
+      const roomId = row[1]
 
       if (checkExists(number, name)) {
         Logger.log(`${number}_${name}の定期観測PDFが存在します、差分チェックを行います`)
 
-        diffHtml(contentUrl, number, name)
+        diffHtml(contentUrl, number, name, roomId)
       } else {
         Logger.log(`${number}_${name}の定期観測PDFが存在しません、作成します。`)
 

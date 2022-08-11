@@ -16,6 +16,11 @@
         "userSymbol": "parser",
         "version": "5",
         "libraryId": "1Jrnqmfa6dNvBTzIgTeilzdo6zk0aUUhcXwLlQEbtkhaRR-fi5eAf4tBJ"
+      },
+      {
+        "userSymbol": "ChatWorkClient",
+        "version": "18",
+        "libraryId": "1nf253qsOnZ-RcdcFu1Y2v4pGwTuuDxN5EbuvKEZprBWg764tjwA5fLav"
       }
     ]
   },
