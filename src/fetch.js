@@ -3,16 +3,16 @@ function fetch() {
   const values = sheet.getDataRange().getValues();
   const observationHtmlFolder = DriveApp.getFolderById('1uhY69tH_navhxIGN_jzqnTcwQH-TR1nf'); //定期観測HTMLフォルダ
   const observationPdfFolder = DriveApp.getFolderById('1KitsrbMPx9ly7Dn5kZLpEGHI3JhxaU1j'); //定期観測PDFフォルダ
-  const observationHtmls = observationHtmlFolder.getFiles();
-  const observationPdfs = observationPdfFolder.getFiles();
+  const observationHtmlFiles = observationHtmlFolder.getFiles();
+  const observationPdfFiles = observationPdfFolder.getFiles();
 
   let oldPdfUrl = '';
 
   const checkExists = (number, name) => {
     let ret = false;
 
-    while (observationPdfs.hasNext()) {
-      const file = observationPdfs.next()
+    while (observationPdfFiles.hasNext()) {
+      const file = observationPdfFiles.next()
 
       if (file.getName() === `${number}_${name}.pdf`) {
         oldPdfUrl = file.getUrl();
@@ -29,9 +29,9 @@ function fetch() {
       const html = response.getContentText('UTF-8')
       const file = observationHtmlFolder.createFile(`${number}_${name}.html`, html, MimeType.HTML)
 
-      Logger.log(`HTML URL: ${file.getUrl()}`)
+      Logger.log(`定期観測HTML作成完了。 URL: ${file.getUrl()}`)
     } catch (e) {
-      Logger.log(`HTML Error: ${e}`)
+      Logger.log(`定期観測HTML作成失敗。 Error: ${e}`)
     }
   }
 
@@ -60,28 +60,31 @@ function fetch() {
 
       urlToHtml(contentUrl, number, name)
 
-      Logger.log(`定期観測PDFを作成しました。URL：${file.getUrl}`);
+      Logger.log(`定期観測PDF作成完了。URL：${file.getUrl}`);
 
       return (file.getUrl());
     } catch (e) {
-      Logger.log(`PDF作成 Error: ${e}`)
+      Logger.log(`定期観測PDF作成失敗。 Error: ${e}`)
     }
   }
 
   const diffHtml = (contentUrl, number, name) => {
+    Logger.log(`${number}_${name}の差分チェック開始`)
     let oldHtml = ''
 
-    while (observationHtmls.hasNext()) {
-      const file = observationHtmls.next()
+    while (observationHtmlFiles.hasNext()) {
+      const file = observationHtmlFiles.next()
 
       if (file.getName() === `${number}_${name}.html`) {
         oldHtml = file.getBlob().getDataAsString('utf-8');
+        Logger.log(`バックアップから${number}_${name}.htmlを取得完了。`)
       }
     }
 
     try {
       const response = UrlFetchApp.fetch(contentUrl)
       const newHtml = response.getBlob().getDataAsString('UTF-8')
+      Logger.log(`現在の記事から${number}_${name}.htmlを取得完了。`)
 
       const oldArticle = Parser.data(oldHtml).from('<article').to('</article>').build()
       const newArticle = Parser.data(newHtml).from('<article').to('</article>').build()
@@ -92,7 +95,7 @@ function fetch() {
         Logger.log(`記事に更新がありませんでした。`)
       }
     } catch (e) {
-      Logger.log(`HTML Error: ${e}`)
+      Logger.log(`差分チェック中エラー Error: ${e}`)
     }
   }
 
@@ -103,11 +106,11 @@ function fetch() {
       const name = row[3]
 
       if (checkExists(number, name)) {
-        Logger.log('定期観測PDFが存在します、差分チェックを行います')
+        Logger.log(`${number}_${name}の定期観測PDFが存在します、差分チェックを行います`)
 
         diffHtml(contentUrl, number, name)
       } else {
-        Logger.log('定期観測PDFが存在しません、作成します。')
+        Logger.log(`${number}_${name}の定期観測PDFが存在しません、作成します。`)
 
         urlToBackupAndPdf(contentUrl, number, name);
       }

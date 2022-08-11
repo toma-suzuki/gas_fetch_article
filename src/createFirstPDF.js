@@ -4,7 +4,6 @@ function createFirstPDF() {
   const firstPdfFolder = DriveApp.getFolderById('1n6jXNDdI44pjRiq1v3BTexQsuyG5x1DJ') //初稿PDFフォルダ
   const firstHtmlFolder = DriveApp.getFolderById('1KHWurWOZnShS5YS7NPnvJ_O6ODGOb-0S') //初稿HTMLフォルダ
   const firstPdfFiles = firstPdfFolder.getFiles()
-  const firstHtmlFiles = firstHtmlFolder.getFiles()
 
   const checkExists = (number, name) => {
     let ret = false
@@ -20,18 +19,20 @@ function createFirstPDF() {
   }
 
   const urlToHtml = (contentUrl, number, name) => {
+    Logger.log(`${contentUrl}から初稿HTMLを作成開始`)
     try {
       const response = UrlFetchApp.fetch(contentUrl)
       const html = response.getContentText('UTF-8')
-      const file = firstHtmlFolder.createFile(`${number}_${name}_初稿.html`, html, MimeType.HTML)
+      const file = firstHtmlFolder.createFile(`${number}_${name}.html`, html, MimeType.HTML)
 
-      Logger.log(`HTML URL: ${file.getUrl()}`)
+      Logger.log(`初稿HTML作成完了。 URL: ${file.getUrl()}`)
     } catch (e) {
-      Logger.log(`HTML Error: ${e}`)
+      Logger.log(`初稿HTML作成失敗。 Error: ${e}`)
     }
   }
 
   const urlToBackupAndPdf = (contentUrl, number, name) => {
+    Logger.log(`${contentUrl}から初稿PDFを作成開始`)
     const requestUrl = 'https://api.sejda.com/v2/html-pdf'
 
     const body = {
@@ -53,13 +54,13 @@ function createFirstPDF() {
       const folder = DriveApp.getFolderById('1n6jXNDdI44pjRiq1v3BTexQsuyG5x1DJ')
       const file = folder.createFile(pdfBlob)
 
-      file.setName(`${number}_${name}_初稿.pdf`)
+      file.setName(`${number}_${name}.pdf`)
 
       urlToHtml(contentUrl, number, name)
 
-      Logger.log(`PDF URL: ${file.getUrl()}`)
+      Logger.log(`初稿PDF作成完了。 URL: ${file.getUrl()}`)
     } catch (e) {
-      Logger.log(`PDF Error: ${e}`)
+      Logger.log(`初稿PDF作成失敗。 Error: ${e}`)
     }
   }
 
@@ -70,6 +71,7 @@ function createFirstPDF() {
       const name = row[3]
 
       if (!checkExists(number, name)) {
+        Logger.log(`初稿に設定されている、${number}_${name}のPDFが作成されていないため、作成します。`)
         urlToBackupAndPdf(contentUrl, number, name)
       }
     }
