@@ -1,26 +1,27 @@
 function fetch() {
   const sheet = SpreadsheetApp.openById('1EbfFgpYKPp6rKe0dYHeu4C6Ntsa8820HqEdSXK8xHdE').getSheetByName('管理シート')
-  const values = sheet.getDataRange().getValues();
-  const observationHtmlFolder = DriveApp.getFolderById('1uhY69tH_navhxIGN_jzqnTcwQH-TR1nf'); //定期観測HTMLフォルダ
-  const observationPdfFolder = DriveApp.getFolderById('1KitsrbMPx9ly7Dn5kZLpEGHI3JhxaU1j'); //定期観測PDFフォルダ
-  const observationHtmlFiles = observationHtmlFolder.getFiles();
-  const observationPdfFiles = observationPdfFolder.getFiles();
+  const values = sheet.getDataRange().getValues()
+  const observationHtmlFolder = DriveApp.getFolderById('1uhY69tH_navhxIGN_jzqnTcwQH-TR1nf') //定期観測HTMLフォルダ
+  const observationPdfFolder = DriveApp.getFolderById('1KitsrbMPx9ly7Dn5kZLpEGHI3JhxaU1j') //定期観測PDFフォルダ
+  const checkPdfFolder = DriveApp.getFolderById('1hUtnj17NgQ5yTf0ZaOMXOvymrmKf8YrL') //比較用PDFフォルダ
+  const observationHtmlFiles = observationHtmlFolder.getFiles()
+  const observationPdfFiles = observationPdfFolder.getFiles()
 
-  let oldPdfUrl = '';
+  let oldPdfId = ''
 
   const checkExists = (number, name) => {
-    let ret = false;
+    let ret = false
 
     while (observationPdfFiles.hasNext()) {
       const file = observationPdfFiles.next()
 
       if (file.getName() === `${number}_${name}.pdf`) {
-        oldPdfUrl = file.getUrl();
-        ret = true;
+        oldPdfId = file.getId()
+        ret = true
       }
     }
 
-    return ret;
+    return ret
   }
 
   const urlToHtml = (contentUrl, number, name) => {
@@ -60,9 +61,9 @@ function fetch() {
 
       urlToHtml(contentUrl, number, name)
 
-      Logger.log(`定期観測PDF作成完了。URL：${file.getUrl}`);
+      Logger.log(`定期観測PDF作成完了。URL：${file.getUrl()}`)
 
-      return (file.getUrl());
+      return file.getUrl()
     } catch (e) {
       Logger.log(`定期観測PDF作成失敗。 Error: ${e}`)
     }
@@ -71,12 +72,15 @@ function fetch() {
   const diffHtml = (contentUrl, number, name) => {
     Logger.log(`${number}_${name}の差分チェック開始`)
     let oldHtml = ''
+    let oldHtmlId = ''
 
     while (observationHtmlFiles.hasNext()) {
       const file = observationHtmlFiles.next()
 
       if (file.getName() === `${number}_${name}.html`) {
-        oldHtml = file.getBlob().getDataAsString('utf-8');
+        oldHtml = file.getBlob().getDataAsString('utf-8')
+        oldHtmlId = file.getId()
+
         Logger.log(`バックアップから${number}_${name}.htmlを取得完了。`)
       }
     }
@@ -90,7 +94,16 @@ function fetch() {
       const newArticle = Parser.data(newHtml).from('<article').to('</article>').build()
 
       if (oldArticle != newArticle) {
-        Logger.log(`記事に更新がありました。現在の記事URL：${contentUrl}  更新前の記事PDF：${oldPdfUrl}`)
+        Logger.log('記事に更新があったので定期観測PDFを比較用に移動。')
+        const oldPdf = DriveApp.getFileById(oldPdfId)
+        oldPdf.moveTo(checkPdfFolder)
+
+        Logger.log('新しい定期観測PDFとHTMLを作成')
+        DriveApp.getFileById(oldHtmlId).setTrashed(true)
+
+        urlToBackupAndPdf(contentUrl, number, name)
+
+        Logger.log(`定期観測の更新＆比較用PDF作成完了。現在の記事URL：${contentUrl}  比較用PDFのURL：${oldPdf.getUrl()}`)
       } else {
         Logger.log(`記事に更新がありませんでした。`)
       }
@@ -112,7 +125,7 @@ function fetch() {
       } else {
         Logger.log(`${number}_${name}の定期観測PDFが存在しません、作成します。`)
 
-        urlToBackupAndPdf(contentUrl, number, name);
+        urlToBackupAndPdf(contentUrl, number, name)
       }
     }
   })
